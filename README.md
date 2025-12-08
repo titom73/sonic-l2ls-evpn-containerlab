@@ -1,154 +1,183 @@
-# sonic-l2ls-evpn-containerlab
+# SONiC & SR Linux EVPN L2LS Lab
 
-The purpose of this repository is showing how to create a SONiC image to be used in a container lab setup and the configuration required at both the SONiC JSON and FRR/BGP levels to deploy a simple EVPN layer 2 service, where one leaf runs SONiC and the spine and the other leaf run SR Linux, as per the diagram:
+> [!NOTE]
+> This repository contains a Containerlab topology to demonstrate EVPN L2LS interoperability between **SONiC** and **Nokia SR Linux**.
 
-![pic1](https://github.com/missoso/sonic-l2ls-evpn-containerlab/blob/main/img_and_drawio/sonic-l2ls-evpn-containerlab.png)
+## 📋 Overview
 
-Client1 (172.17.1.1/24) and client2 (172.17.1.2/24) are on the same subnet and can reach each other, once the lab is deployed populating the ARP tables at the hosts can be achieved by just running the script [pings.sh](https://github.com/missoso/sonic-l2ls-evpn-containerlab/blob/main/pings.sh)
+The purpose of this repository is showing how to create a SONiC image to be used in a container lab setup and the configuration required at both the SONiC JSON and FRR/BGP levels to deploy a simple EVPN layer 2 service.
 
-# Download the SONiC image from an Azure pipeline
+This lab simulates a small Data Center fabric with:
+- **Spine:** Nokia SR Linux
+- **Leaf 1:** SONiC (Virtual Switch)
+- **Leaf 2:** Nokia SR Linux
+- **Clients:** Linux Alpine hosts
 
-1 - Go to the pipelines list: https://sonic-build.azurewebsites.net/ui/sonic/pipelines and scroll all the way down where "vs" platform is listed
+The goal is to establish L2 EVPN connectivity between Client 1 (connected to SONiC) and Client 2 (connected to SR Linux).
 
-2 - Choose a build (in this lab 202411 was used for no particular reason) and click on build history
-  
-3 - Pick one where "Result = succeeded" and click on Artifacts 
+### Topology
 
-4 - Click on sonic-builimage.vs
+![Topology](./img_and_drawio/sonic-l2ls-evpn-containerlab.png)
 
-5 - Download the target/sonic-vs.img.gz
+## 🛠️ Prerequisites & Image Setup
 
-![pic1](https://github.com/missoso/sonic-l2ls-evpn-containerlab/blob/main/img_and_drawio/sonic-img-download.png)
+Before starting, ensure you have [Containerlab](https://containerlab.dev/install/) and [Docker](https://docs.docker.com/engine/install/) installed.
 
-The above insttructions are based on the following URL: https://containerlab.dev/manual/kinds/sonic-vs/#getting-sonic-images
+### Obtaining the SONiC Image
 
-# Build the SONiC container lab image
+To run SONiC in Containerlab, you need a compatible image. There are two main approaches, but this lab uses **Option 2 (vrnetlab)** to simulate a realistic architecture.
 
-```bash
-% ls | grep sonic
-sonic-vs.img.gz
+#### Step 1: Download from Azure Pipeline
 
-$ gunzip sonic-vs.img.gz
+1.  Go to the [SONiC Azure Pipelines](https://sonic-build.azurewebsites.net/ui/sonic/pipelines).
+2.  Scroll down to where the **"vs"** platform is listed.
+3.  Choose a build (e.g., `202411`) and click on **Build History**.
+4.  Pick one where "Result = succeeded" and click on **Artifacts**.
+5.  Click on `sonic-buildimage.vs`.
+6.  Download the `target/sonic-vs.img.gz`.
 
-$ ls
-sonic-vs.img
-```
+![Download Image](./img_and_drawio/sonic-img-download.png)
 
-Here there are 2 options:
+> [!TIP]
+> These instructions are based on the [Containerlab Manual: Getting SONiC Images](https://containerlab.dev/manual/kinds/sonic-vs/#getting-sonic-images).
 
-1 - (not used in this repository) Uncompress and simply load the image into docker, the drawback is that the end result is not going to be very similar to a SONiC router since processes like shmp, swss, bgp etc will not be running in separate containers
-
-```bash
-$ docker load < docker-sonic-vs
-$ docker image ls
-REPOSITORY                             TAG       IMAGE ID       CREATED         SIZE
-docker-sonic-vs                        latest    2d9c647a53df   4 hours ago     797MB 
-```
-
-Using the above in the clab.yml file the "kind" field to be used is "sonic-vs" (kind: sonic-vs)
-
-2 - Use the vrnetlab tool (https://containerlab.dev/manual/vrnetlab/) to create a SONiC image that truly mimics the SONiC architecture in terms of different processes running in different containers
-
-The installation process of vrnetlab places the prompt ~/vrnetlab/, enter the sonic sub directory and the README.md file contains all the instructions, as also detailed in the CLI output below
-
+#### Step 2: Build the Image
 
 ```bash
-# copy the image into ~/vrnetlab/sonic
+# Check your downloaded file
+ls | grep sonic
+# sonic-vs.img.gz
 
-:~/vrnetlab/sonic$  mv sonic-vs.img sonic-vs-202411.qcow2
-
-:~/vrnetlab/sonic$  make
-
-:~/vrnetlab/sonic$  docker images | grep vrnetlab
-vrnetlab/sonic_sonic-vs                202411    0abf9ef806c8   About a minute ago   6.42GB
+# Unzip it
+gunzip sonic-vs.img.gz
+# Result: sonic-vs.img
 ```
 
-Using the above in the clab.yml file the "kind" field to be used is "sonic-vm" (kind: sonic-vm)
+Now you have two options to use this image:
 
+<details>
+<summary><strong>Option 1: Direct Docker Load (Not used in this lab)</strong></summary>
+
+You can simply load the image into Docker.
 ```bash
-    leaf1:
-      kind: sonic-vm
-      image: vrnetlab/sonic_sonic-vs:202411
+docker load < docker-sonic-vs
 ```
+**Drawback:** The end result is not very similar to a real SONiC router since processes like `shmp`, `swss`, `bgp` will not be running in separate containers.
+</details>
 
-The advantage of using the vrnetlab tool is that the result truly mimics the SONiC architecture, where we can see different containers for different processes
+**Option 2: Use vrnetlab (Recommended)**
+
+Use the [vrnetlab tool](https://containerlab.dev/manual/vrnetlab/) to create a SONiC image that truly mimics the SONiC architecture (different processes in different containers).
+
+1.  Move the image to your vrnetlab directory:
+    ```bash
+    mv sonic-vs.img ~/vrnetlab/sonic/sonic-vs-202411.qcow2
+    ```
+2.  Build the image:
+    ```bash
+    cd ~/vrnetlab/sonic
+    make
+    ```
+3.  Verify the image:
+    ```bash
+    docker images | grep vrnetlab
+    # vrnetlab/sonic_sonic-vs    202411    0abf9ef806c8   About a minute ago   6.42GB
+    ```
+
+**Why vrnetlab?**
+It mimics the real architecture. You can see different containers for different processes inside the VM:
 
 ```bash
 admin@sonic:~$ docker ps
-CONTAINER ID   IMAGE                             COMMAND                  CREATED              STATUS              PORTS     NAMES
-6c0b1e92be5c   docker-router-advertiser:latest   "/usr/bin/docker-ini…"   46 seconds ago       Up 41 seconds                 radv
-476887704c68   docker-gbsyncd-vs:latest          "/usr/local/bin/supe…"   47 seconds ago       Up 42 seconds                 gbsyncd
-b0671ba89f97   docker-eventd:latest              "/usr/local/bin/supe…"   48 seconds ago       Up 43 seconds                 eventd
-8249518149b4   docker-fpm-frr:latest             "/usr/bin/docker_ini…"   48 seconds ago       Up 45 seconds                 bgp
-61e5be1a45a9   docker-syncd-vs:latest            "/usr/local/bin/supe…"   49 seconds ago       Up 46 seconds                 syncd
-f2287fc3db9c   docker-teamd:latest               "/usr/local/bin/supe…"   49 seconds ago       Up 47 seconds                 teamd
-a459756a8bf2   docker-orchagent:latest           "/usr/bin/docker-ini…"   53 seconds ago       Up 50 seconds                 swss
-43f5388f05d5   docker-database:latest            "/usr/local/bin/dock…"   About a minute ago   Up About a minute             database
+CONTAINER ID   IMAGE                             COMMAND                  NAMES
+6c0b1e92be5c   docker-router-advertiser:latest   "/usr/bin/docker-ini…"   radv
+476887704c68   docker-gbsyncd-vs:latest          "/usr/local/bin/supe…"   gbsyncd
+b0671ba89f97   docker-eventd:latest              "/usr/local/bin/supe…"   eventd
+8249518149b4   docker-fpm-frr:latest             "/usr/bin/docker_ini…"   bgp
+61e5be1a45a9   docker-syncd-vs:latest            "/usr/local/bin/supe…"   syncd
+f2287fc3db9c   docker-teamd:latest               "/usr/local/bin/supe…"   teamd
+a459756a8bf2   docker-orchagent:latest           "/usr/bin/docker-ini…"   swss
+43f5388f05d5   docker-database:latest            "/usr/local/bin/dock…"   database
 ```
 
-## Deploying the lab
+## 🚀 Deployment & Quick Start
 
-The lab is deployed with the [containerlab](https://containerlab.dev) project, where [`evpn_sonic_l2ls.clab.yml`](https://github.com/missoso/sonic-l2ls-evpn-containerlab/blob/main/evpn_sonic_l2ls.clab.yml) file declaratively describes the lab topology.
+### 1. Deploy the Topology
 
-To create or update the lab
+The [`evpn_sonic_l2ls.clab.yml`](./evpn_sonic_l2ls.clab.yml) file declaratively describes the lab.
+
 ```bash
-containerlab deploy --reconfigure
+sudo containerlab deploy --reconfigure
 ```
 
-After the lab is created it is expected that the SONiC router will take some time to load, use the docker ps command to see when the status becomes healthy
+> [!IMPORTANT]
+> **Wait for SONiC to boot.** It takes time. Check health status:
+> ```bash
+> docker ps | grep leaf1
+> # Look for "(healthy)" status
+> ```
+
+### 2. Configure SONiC (Post-Boot)
+
+Unlike SR Linux, SONiC needs post-boot configuration.
+
+**Step A: Apply System Configuration (JSON)**
+This script copies and applies `config_db.json`.
 
 ```bash
-$ docker ps | grep leaf1
-42048a32ab14   vrnetlab/sonic_sonic-vs:202411       "/launch.py --userna…"   10 minutes ago   Up 10 minutes (healthy)   22/tcp, 443/tcp, 5000/tcp, 8080/tcp                      leaf1
+./deploy_sonic_cfg.sh
+```
+*What this does:*
+1. Copies `configs/leaf1-config.json` to the host.
+2. Replaces `/etc/sonic/config_db.json`.
+3. Reloads configuration (`sudo config reload -y`).
+
+**Step B: Apply Routing Configuration (FRR)**
+This script configures BGP/EVPN via `vtysh`.
+
+```bash
+./deploy_bgp_vtysh.sh
 ```
 
-To destroy the lab
+### 3. Summary of Deployment Steps
+1.  Deploy containerlab.
+2.  Run `deploy_sonic_cfg.sh` (Updates JSON).
+3.  Run `deploy_bgp_vtysh.sh` (Updates FRR).
+4.  Run `pings.sh` (Populates ARP and verifies).
+
+## 🧠 Deep Dive: SONiC Configuration & Architecture
+
+### Interface Mapping (Containerlab vs SONiC)
+
+In `evpn_sonic_l2ls.clab.yml`, interfaces are named `eth1`, `eth2`...
+In SONiC, they map to `Ethernet0`, `Ethernet4`...
+
+| Containerlab | SONiC Interface | Connected To |
+| :--- | :--- | :--- |
+| `eth1` | `Ethernet0` | Spine1 |
+| `eth2` | `Ethernet4` | Client1 |
+
+**Verification on SONiC:**
 ```bash
-containerlab destroy --cleanup
+admin@sonic:~$ show interfaces status 
+  Interface            Lanes       Speed    MTU    FEC           Alias    Vlan    Oper    Admin    Type    Asym PFC
+-----------  ---------------  ----------  -----  -----  --------------  ------  ------  -------  ------  ----------
+  Ethernet0      25,26,27,28  4294967.3G   9100    N/A    fortyGigE0/0  routed      up       up     N/A         N/A
+  Ethernet4      29,30,31,32  4294967.3G   9100    N/A    fortyGigE0/4   trunk      up       up     N/A         N/A
+  Ethernet8      33,34,35,36         40G   9100    N/A    fortyGigE0/8  routed    down       up     N/A         N/A
 ```
 
-All nodes can be reached via SSH except the clients since there is no SSH configured in them
-```bash
-docker exec -it client1 bash
-docker exec -it client2 bash
-```
-SONiC SSH access credentials: admin/admin
-SR Linux: admin and no password
+### Configuration Structure: JSON vs FRR
 
-## SONiC configuration files
+SONiC configuration is split between two key files.
 
-There are two key files:
+#### 1. JSON Configuration (`/etc/sonic/config_db.json`)
+Handles system state, interfaces, and basic BGP globals.
 
-1 - JSON file (located at /etc/sonic/config_db.json)
-```bash
-#Write the configuration
-sudo config save -y
+**Key JSON Snippets:**
 
-#Load the configuration:
-sudo config load /etc/sonic/config_db.json -y
-
-#Reload (after loading a new config restart SONiC services):
-sudo config reload -y 
-```
-
-The SONiC configuration cab be done by manipulating the JSON (and then reloading) or simply using the SONiC CLI adn then doing a config save.
-
-**Important note 1**: The https://github.com/sonic-net/SONiC/wiki/Configuration provides some very good insights regarding the JSON file structure, however, it is not a complete schema definition (the information is scattered across several different websites)
-
-**Important note 2**: Many of the BGP configuration options can be configured in the JSON file directly, however, some configuration options (e.g. import/export policies) require FRR configuration which requires editing the configuration file for FRR (next point)
-
-2 - FRR configuration regarding protocols such as BGP, can be accessed using vtysh in the SONiC host
-```bash
-admin@sonic:~$ vtysh
-
-Hello, this is FRRouting (version 10.0.1).
-Copyright 1996-2005 Kunihiro Ishiguro, et al.
-sonic#     
-```
-
-In this repository there is some BGP configuration in the JSON file and some on the FRR config, some parts of the JSON file:
-
-```bash
+*Global BGP Settings:*
+```json
     "BGP_DEVICE_GLOBAL": {
         "STATE": {
             "idf_isolation_state": "unisolated",
@@ -162,165 +191,89 @@ In this repository there is some BGP configuration in the JSON file and some on 
             "local_asn": "101",
             "router_id": "10.0.1.1"
         }
-    },
+    }
+```
+
+*Device Metadata:*
+```json
     "DEVICE_METADATA": {
         "localhost": {
             "bgp_asn": "101",
-            "buffer_model": "traditional",
-            "default_bgp_status": "up",
-            "default_pfcwd_status": "disable",
             "hostname": "sonic",
             "hwsku": "Force10-S6000",
             "mac": "22:d1:c7:63:8f:4a",
             "platform": "x86_64-kvm_x86_64-r0",
-            "timezone": "UTC",
             "type": "LeafRouter"
-        }
-    },
-```
-
-In the folder [`configs`](https://github.com/missoso/sonic-l2ls-evpn-containerlab/tree/main/configs) there is the [`JSON file`](https://github.com/missoso/sonic-l2ls-evpn-containerlab/blob/main/configs/leaf1-config.json) and [`FRR file`](https://github.com/missoso/sonic-l2ls-evpn-containerlab/blob/main/configs/leaf1-frr-bgp.cfg) used
-
-## SONiC node configuration after boot 
-
-After boot there are two steps required
-
-1 - Replace the file /etc/sonic/config_db.json at the SONiC host (apparently it is not possible to pass the configuration file directly via the clab.yml definition hence the need for this step)
-
-1.1 - Copy the file to the host
-
-1.2 - Replace /etc/sonic/config_db.json
-
-1.3 - Reload the host so that the "new" configuration in the JSON file becomes active 
-
-The above steps are summarised in the shell script [`deploy_sonic_cfg.sh`](https://github.com/missoso/sonic-l2ls-evpn-containerlab/blob/main/deploy_sonic_cfg.sh)
-
-2 - Load the desided [`FRR BGP configuration`](https://github.com/missoso/sonic-l2ls-evpn-containerlab/blob/main/configs/leaf1-frr-bgp.cfg) 
-
-After step 1 there will be some BGP parameters already there (the ones that are part of the JSON), however, others need to be added directly at the FRR configuration level.
-
-This can be achieved by running the script [`deploy_bgp_vtysh.sh`](https://github.com/missoso/sonic-l2ls-evpn-containerlab/blob/main/deploy_bgp_vtysh.sh)
-
-## SONiC specifics regarding container lab topology file and interface naming
-
-In the file that describes the topology [`evpn_sonic_l2ls.clab.yml`](https://github.com/missoso/sonic-l2ls-evpn-containerlab/blob/main/evpn_sonic_l2ls.clab.yml) the interfaces for a device of type sonic-vm or sonic-vs are named eth1 to ethN where in the SONiC router there are named Ethernet0, Ethernet4, Ethernet8 and so on. The matching rules used is that eth1 in the clab.yml file relates to the 1st Ethernet interface in the SONiC router, eth2 to the 2nd and so on ... so in the topology file we see eth1 and eth2 regarding leaf1 (the SONiC router):
-
-```bash
-  links:
-    - endpoints: ["spine1:e1-1", "leaf1:eth1"] # eth1 maps to Ethernet0
-    - endpoints: ["spine1:e1-2", "leaf2:e1-49"]
-    - endpoints: ["client1:eth1", "leaf1:eth2"] # eth2 maps to Ethernet4
-    - endpoints: ["client2:eth1", "leaf2:e1-1"]
-```
-
-While in the SONiC router itself:
-```bash
-admin@sonic:~$ show interfaces status 
-  Interface            Lanes       Speed    MTU    FEC           Alias    Vlan    Oper    Admin    Type    Asym PFC
------------  ---------------  ----------  -----  -----  --------------  ------  ------  -------  ------  ----------
-  Ethernet0      25,26,27,28  4294967.3G   9100    N/A    fortyGigE0/0  routed      up       up     N/A         N/A
-  Ethernet4      29,30,31,32  4294967.3G   9100    N/A    fortyGigE0/4   trunk      up       up     N/A         N/A
-  Ethernet8      33,34,35,36         40G   9100    N/A    fortyGigE0/8  routed    down       up     N/A         N/A
- Ethernet12      37,38,39,40         40G   9100    N/A   fortyGigE0/12  routed    down       up     N/A         N/A
- Ethernet16      45,46,47,48         40G   9100    N/A   fortyGigE0/16  routed    down       up     N/A         N/A
- Ethernet20      41,42,43,44         40G   9100    N/A   fortyGigE0/20  routed    down       up     N/A         N/A
- Ethernet24          1,2,3,4         40G   9100    N/A   fortyGigE0/24  routed    down       up     N/A         N/A
-```
-
-## SONiC node VXLAN configuration
-
-The configuration is a simple Layer 2 EVPN where access port Ethernet4 is an untagged port belonging to VLAN 100, which is part of VXLAN 100 (that uses VNI 100) and the VTEP endpoint is the loopback interface (10.0.1.1)
-
-
-```bash
-    "VLAN": {
-        "Vlan100": {
-            "vlanid": "100"
-        }
-    },
-    "VLAN_MEMBER": {
-        "Vlan100|Ethernet4": {
-            "tagging_mode": "untagged"
-        }
-    },
-    "VXLAN_TUNNEL": {
-        "VXLAN100": {
-            "src_ip": "10.0.1.1"
-        }
-    },
-    "VXLAN_TUNNEL_MAP": {
-        "VXLAN100|map_100_Vlan100": {
-            "vlan": "Vlan100",
-            "vni": "100"
         }
     }
 ```
 
-The above is the JSON configuration, in the CLI the commands to achieve that configuration would be:
+> [!NOTE]
+> The [SONiC Configuration Wiki](https://github.com/sonic-net/SONiC/wiki/Configuration) provides insights, but there is no single complete schema definition.
+
+#### 2. FRR Configuration (`vtysh`)
+Handles complex routing logic (Route Maps, Neighbors, EVPN).
 
 ```bash
-admin@sonic:~$ sudo config vlan add 100
+admin@sonic:~$ vtysh
+Hello, this is FRRouting (version 10.0.1).
+sonic#
+```
 
-admin@sonic:~$ sudo config vlan member add 100 Ethernet4 --untagged
+Some BGP options (like import/export policies) **must** be configured here, as they are not fully supported in the JSON config.
 
-admin@sonic:~$ sudo config vxlan add VXLAN100 10.0.1.1. # 10.0.1.1 is the Loopback0 address
+### VXLAN Configuration Details
 
-admin@sonic:~$ sudo config vxlan map add VXLAN100 100 100 # MAP VXLAN100 to VLAN 100 and to VNI 100 
+We map VLAN 100 to VNI 100.
 
+**JSON Configuration:**
+```json
+    "VLAN": { "Vlan100": { "vlanid": "100" } },
+    "VLAN_MEMBER": { "Vlan100|Ethernet4": { "tagging_mode": "untagged" } },
+    "VXLAN_TUNNEL": { "VXLAN100": { "src_ip": "10.0.1.1" } },
+    "VXLAN_TUNNEL_MAP": { "VXLAN100|map_100_Vlan100": { "vlan": "Vlan100", "vni": "100" } }
+```
+
+**Equivalent CLI Commands:**
+```bash
+sudo config vlan add 100
+sudo config vlan member add 100 Ethernet4 --untagged
+sudo config vxlan add VXLAN100 10.0.1.1
+sudo config vxlan map add VXLAN100 100 100
+```
+
+**Verification:**
+```bash
 admin@sonic:~$ show vxlan interface
 VTEP Information:
-
 	VTEP Name : VXLAN100, SIP  : 10.0.1.1
 	Source interface  : Loopback0
 
-
 admin@sonic:~$ show vlan brief
 +-----------+--------------+-----------+----------------+-------------+
-|   VLAN ID | IP Address   | Ports     | Port Tagging   | Proxy ARP   
-+===========+==============+===========+================+=
-|       100 |              | Ethernet4 | untagged       | disabled    |                       |
+|   VLAN ID | IP Address   | Ports     | Port Tagging   | Proxy ARP   |
++===========+==============+===========+================+=============+
+|       100 |              | Ethernet4 | untagged       | disabled    |
 +-----------+--------------+-----------+----------------+-------------+
 ```
 
+## ✅ Verification & Routing Table
 
-## SONiC node BGP configuration
-
-The FRR configuration is straightforward, 2 BGP peering sessions towards the spine, one eBGP acting as an underlay and one iBGP as the overlay (spine acts as an route reflector), the [`FRR BGP configuration`](https://github.com/missoso/sonic-l2ls-evpn-containerlab/blob/main/configs/leaf1-frr-bgp.cfg) file is self explanatory
-
-## Routing table
+### 1. Connectivity
+Run the ping script to verify Client 1 (SONiC) <-> Client 2 (SRL).
 
 ```bash
-Linux sonic 6.1.0-29-2-amd64 #1 SMP PREEMPT_DYNAMIC Debian 6.1.123-1 (2025-01-02) x86_64
-You are on
-  ____   ___  _   _ _  ____
- / ___| / _ \| \ | (_)/ ___|
- \___ \| | | |  \| | | |
-  ___) | |_| | |\  | | |___
- |____/ \___/|_| \_|_|\____|
+./pings.sh
+```
 
--- Software for Open Networking in the Cloud --
+### 2. BGP EVPN Table
+Verify that routes are exchanged between PE1 (SONiC - 10.0.1.1) and PE2 (SR Linux - 10.0.1.2).
 
-Unauthorized access and/or use are prohibited.
-All access and/or use are subject to monitoring.
+```bash
+admin@sonic:~$ vtysh -c "show bgp l2vpn evpn"
 
-Help:    https://sonic-net.github.io/SONiC/
-
-Last login: Mon Dec  8 14:34:00 2025 from 172.80.80.1
-admin@sonic:~$ vtysh
-
-Hello, this is FRRouting (version 10.0.1).
-Copyright 1996-2005 Kunihiro Ishiguro, et al.
-
-sonic# show bgp l2vpn evpn
 BGP table version is 6, local router ID is 10.0.1.1
 Status codes: s suppressed, d damped, h history, * valid, > best, i - internal
-Origin codes: i - IGP, e - EGP, ? - incomplete
-EVPN type-1 prefix: [1]:[EthTag]:[ESI]:[IPlen]:[VTEP-IP]:[Frag-id]
-EVPN type-2 prefix: [2]:[EthTag]:[MAClen]:[MAC]:[IPlen]:[IP]
-EVPN type-3 prefix: [3]:[EthTag]:[IPlen]:[OrigIP]
-EVPN type-4 prefix: [4]:[ESI]:[IPlen]:[OrigIP]
-EVPN type-5 prefix: [5]:[EthTag]:[IPlen]:[IP]
-
    Network          Next Hop            Metric LocPrf Weight Path
 Route Distinguisher: 10.0.1.1:100
  *> [2]:[0]:[48]:[22:d1:c7:63:8f:4a]:[128]:[fe80::20d1:c7ff:fe63:8f4a]
@@ -329,21 +282,16 @@ Route Distinguisher: 10.0.1.1:100
  *> [2]:[0]:[48]:[aa:c1:ab:d7:8a:06]
                     10.0.1.1                           32768 i
                     ET:8 RT:65000:100
- *> [2]:[0]:[48]:[aa:c1:ab:d7:8a:06]:[128]:[fe80::a8c1:abff:fed7:8a06]
-                    10.0.1.1                           32768 i
-                    ET:8 RT:65000:100
- *> [3]:[0]:[32]:[10.0.1.1]
-                    10.0.1.1                           32768 i
-                    ET:8 RT:65000:100
 Route Distinguisher: 10.0.1.2:100
  *> [2]:[0]:[48]:[aa:c1:ab:5a:c3:78]
                     10.0.1.2                      100      0 100 201 i
                     RT:65000:100 ET:8
- *> [3]:[0]:[32]:[10.0.1.2]
-                    10.0.1.2                      100      0 100 201 i
-                    RT:65000:100 ET:8
 ```
 
-As per the above we ahve routers being exchanged between PE1 (SONiC - 10.0.1.1.) and PE2 (SR Linux - 10.0.1.2)
+## 🧹 Cleanup
 
+To stop the lab and remove all containers:
 
+```bash
+sudo containerlab destroy -t evpn_sonic_l2ls.clab.yml --cleanup
+```
