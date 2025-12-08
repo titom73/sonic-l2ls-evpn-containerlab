@@ -93,7 +93,34 @@ Destroy the lab
 containerlab destroy --cleanup
 ```
 
+## SONiC configuration
 
+There are two key components
+
+1 - JSON file (located at /etc/sonic/config_db.json)
+```bash
+#Write the configuration
+sudo config save -y
+
+#Load the configuration:
+sudo config load /etc/sonic/config_db.json -y
+
+#Reload (after loading a new config restart SONiC services):
+sudo config reload -y 
+```
+
+2 - FRR configuration regarding protocols such as BGP, can be acceses using vtysh in the SONiC host
+```bash
+admin@sonic:~$ vtysh
+
+Hello, this is FRRouting (version 10.0.1).
+Copyright 1996-2005 Kunihiro Ishiguro, et al.
+sonic#     
+```
+
+Note: Many of the BGP configuration options can be configured in the JSON file directly, however, some configuration options e.g. import/export policies require FRR configuration
+
+Note 2: I'm not aware of a schema defintion for the config_db.json
 
 
 
