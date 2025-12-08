@@ -171,7 +171,37 @@ After step 1 there will be some BGP paramentes already there (the onces that are
 
 This can be achieved by running the script [`deploy_bgp_vtysh.sh`](https://github.com/missoso/sonic-l2ls-evpn-containerlab/blob/main/deploy_bgp_vtysh.sh)
 
+## SONiC specifics regarding container lab topology file and interface naming
 
+In the file that describes the topology [`evpn_sonic_l2ls.clab.yml`](https://github.com/missoso/sonic-l2ls-evpn-containerlab/blob/main/evpn_sonic_l2ls.clab.yml) the interfaces for a device of type sonic-vm or sonic-vs are named eth1 to ethN where in the SONiC router there are named Ethernet0, Ethernet4, Ethernet8 and so on. The matching rules used is that eth1 in the clab.yml file relates to the 1st Ethernet interface in the SONiC router, eth2 to the 2nd adn so on ... so in the topology filew e see eth1 and eth2 regarding leaf1 (the SONiC router):
+
+```bash
+  links:
+    - endpoints: ["spine1:e1-1", "leaf1:eth1"] # eth1 maps to Ethernet0
+    - endpoints: ["spine1:e1-2", "leaf2:e1-49"]
+    - endpoints: ["client1:eth1", "leaf1:eth2"] # eth2 maps to Ethernet4
+    - endpoints: ["client2:eth1", "leaf2:e1-1"]
+```
+
+While in the SONiC router itself:
+```bash
+admin@sonic:~$ show interfaces status 
+  Interface            Lanes       Speed    MTU    FEC           Alias    Vlan    Oper    Admin    Type    Asym PFC
+-----------  ---------------  ----------  -----  -----  --------------  ------  ------  -------  ------  ----------
+  Ethernet0      25,26,27,28  4294967.3G   9100    N/A    fortyGigE0/0  routed      up       up     N/A         N/A
+  Ethernet4      29,30,31,32  4294967.3G   9100    N/A    fortyGigE0/4   trunk      up       up     N/A         N/A
+  Ethernet8      33,34,35,36         40G   9100    N/A    fortyGigE0/8  routed    down       up     N/A         N/A
+ Ethernet12      37,38,39,40         40G   9100    N/A   fortyGigE0/12  routed    down       up     N/A         N/A
+ Ethernet16      45,46,47,48         40G   9100    N/A   fortyGigE0/16  routed    down       up     N/A         N/A
+ Ethernet20      41,42,43,44         40G   9100    N/A   fortyGigE0/20  routed    down       up     N/A         N/A
+ Ethernet24          1,2,3,4         40G   9100    N/A   fortyGigE0/24  routed    down       up     N/A         N/A
+```
+
+
+
+## SONiC node VXLAN configuration
+
+The configuration is a simple Layer 2 EVPN where access port Ethernet
 
 
 
