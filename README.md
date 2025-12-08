@@ -1,6 +1,6 @@
 # sonic-l2ls-evpn-containerlab
 
-The purpose of this repo is showing how to create a SONiC image to be used in a container lab setup and the configuration required at both the SONiC and FRR levels to deploy a EVPN layer 2 service, where one leaf runs SONiC and the spine and the other leaf run SR Linux, as per the diagram:
+The purpose of this repository is showing how to create a SONiC image to be used in a container lab setup and the configuration required at both the SONiC JSON and FRR levels to deploy a simple EVPN layer 2 service, where one leaf runs SONiC and the spine and the other leaf run SR Linux, as per the diagram:
 
 ![pic1](https://github.com/missoso/sonic-l2ls-evpn-containerlab/blob/main/img_and_drawio/sonic-l2ls-evpn-containerlab.png)
 
@@ -109,6 +109,10 @@ sudo config load /etc/sonic/config_db.json -y
 sudo config reload -y 
 ```
 
+Important note 1: The https://github.com/sonic-net/SONiC/wiki/Configuration provides some very good insights regarding the JSON file structure, however, it is not a compelte schema definition to that JSON file (the information is scattered across several different websites)
+
+Important note 2: Many of the BGP configuration options can be configured in the JSON file directly, however, some configuration options e.g. import/export policies require FRR configuration meaning editing the configuration file for FRR is likely to be amndatory in most cases, which is the 2nd configuration component:
+
 2 - FRR configuration regarding protocols such as BGP, can be acceses using vtysh in the SONiC host
 ```bash
 admin@sonic:~$ vtysh
@@ -117,8 +121,6 @@ Hello, this is FRRouting (version 10.0.1).
 Copyright 1996-2005 Kunihiro Ishiguro, et al.
 sonic#     
 ```
-
-Note: Many of the BGP configuration options can be configured in the JSON file directly, however, some configuration options e.g. import/export policies require FRR configuration.
 
 In this repository there is some BGP configuration in the JSON and some on the FRR config, some parts of the JSON file:
 
@@ -197,11 +199,38 @@ admin@sonic:~$ show interfaces status
  Ethernet24          1,2,3,4         40G   9100    N/A   fortyGigE0/24  routed    down       up     N/A         N/A
 ```
 
-
-
 ## SONiC node VXLAN configuration
 
-The configuration is a simple Layer 2 EVPN where access port Ethernet
+The configuration is a simple Layer 2 EVPN where access port Ethernet4 is an untagged port belonguing to VLAN 100, which is part of VXLAN 100 (that uses VNI 100) and the VTEP endpoint is the loopback interface (10.0.1.1)
+
+
+```bash
+    "VLAN": {
+        "Vlan100": {
+            "vlanid": "100"
+        }
+    },
+    "VLAN_MEMBER": {
+        "Vlan100|Ethernet4": {
+            "tagging_mode": "untagged"
+        }
+    },
+    "VXLAN_TUNNEL": {
+        "VXLAN100": {
+            "src_ip": "10.0.1.1"
+        }
+    },
+    "VXLAN_TUNNEL_MAP": {
+        "VXLAN100|map_100_Vlan100": {
+            "vlan": "Vlan100",
+            "vni": "100"
+        }
+    }
+```
+## SONiC node BGP configuration
+
+
+
 
 
 
