@@ -107,6 +107,14 @@ To destroy the lab
 containerlab destroy --cleanup
 ```
 
+All nodes can be reached via SSH except the clients since there is no SSH configured in them
+```bash
+docker exec -it client1 bash
+docker exec -it client2 bash
+```
+SONiC SSH access credentials: admin/admin
+SR Linux: admin and no password
+
 ## SONiC configuration files
 
 There are two key files:
