@@ -1,4 +1,4 @@
-<img width="468" height="25" alt="image" src="https://github.com/user-attachments/assets/c2044462-e951-42bd-a4f0-5f256752f035" /><img width="468" height="25" alt="image" src="https://github.com/user-attachments/assets/0451d326-d207-4117-b0a2-e885d58ce517" /># sonic-l2ls-evpn-containerlab
+# sonic-l2ls-evpn-containerlab
 
 The purpose of this repository is showing how to create a SONiC image to be used in a container lab setup and the configuration required at both the SONiC JSON and FRR levels to deploy a simple EVPN layer 2 service, where one leaf runs SONiC and the spine and the other leaf run SR Linux, as per the diagram:
 
