@@ -109,9 +109,9 @@ sudo config load /etc/sonic/config_db.json -y
 sudo config reload -y 
 ```
 
-Important note 1: The https://github.com/sonic-net/SONiC/wiki/Configuration provides some very good insights regarding the JSON file structure, however, it is not a compelte schema definition to that JSON file (the information is scattered across several different websites)
+**Important note 1**: The https://github.com/sonic-net/SONiC/wiki/Configuration provides some very good insights regarding the JSON file structure, however, it is not a compelte schema definition to that JSON file (the information is scattered across several different websites)
 
-Important note 2: Many of the BGP configuration options can be configured in the JSON file directly, however, some configuration options e.g. import/export policies require FRR configuration meaning editing the configuration file for FRR is likely to be amndatory in most cases, which is the 2nd configuration component:
+**Important note 2**: Many of the BGP configuration options can be configured in the JSON file directly, however, some configuration options (e.g. import/export policies) require FRR configuration which requires editing the configuration file for FRR (next point)
 
 2 - FRR configuration regarding protocols such as BGP, can be acceses using vtysh in the SONiC host
 ```bash
@@ -154,6 +154,8 @@ In this repository there is some BGP configuration in the JSON and some on the F
         }
     },
 ```
+
+In the folder [`configs`](https://github.com/missoso/sonic-l2ls-evpn-containerlab/tree/main/configs) there is the [`JSON file`](https://github.com/missoso/sonic-l2ls-evpn-containerlab/blob/main/configs/leaf1-config.json) and [`FRR file`](https://github.com/missoso/sonic-l2ls-evpn-containerlab/blob/main/configs/leaf1-frr-bgp.cfg) used
 
 ## SONiC node configuration after boot 
 
