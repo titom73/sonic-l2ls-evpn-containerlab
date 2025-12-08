@@ -82,7 +82,7 @@ The lab is deployed with the [containerlab](https://containerlab.dev) project, w
 containerlab deploy --reconfigure
 ```
 
-After the lab is created it is expected that the SONiC router willl take some time to load
+After the lab is created it is expected that the SONiC router willl take some time to load, monitor 
 
 
 ```bash
