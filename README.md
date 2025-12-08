@@ -93,7 +93,7 @@ Destroy the lab
 containerlab destroy --cleanup
 ```
 
-## SONiC configuration
+## SONiC configuration files
 
 There are two key components
 
@@ -118,9 +118,59 @@ Copyright 1996-2005 Kunihiro Ishiguro, et al.
 sonic#     
 ```
 
-Note: Many of the BGP configuration options can be configured in the JSON file directly, however, some configuration options e.g. import/export policies require FRR configuration
+Note: Many of the BGP configuration options can be configured in the JSON file directly, however, some configuration options e.g. import/export policies require FRR configuration.
 
-Note 2: I'm not aware of a schema defintion for the config_db.json
+In this repository there is some BGP configuration in the JSON and some on the FRR config, some parts of the JSON file:
+
+```bash
+    "BGP_DEVICE_GLOBAL": {
+        "STATE": {
+            "idf_isolation_state": "unisolated",
+            "tsa_enabled": "false",
+            "wcmp_enabled": "false"
+        }
+    },
+    "BGP_GLOBALS": {
+        "default": {
+            "default_ipv4_unicast": "true",
+            "local_asn": "101",
+            "router_id": "10.0.1.1"
+        }
+    },
+    "DEVICE_METADATA": {
+        "localhost": {
+            "bgp_asn": "101",
+            "buffer_model": "traditional",
+            "default_bgp_status": "up",
+            "default_pfcwd_status": "disable",
+            "hostname": "sonic",
+            "hwsku": "Force10-S6000",
+            "mac": "22:d1:c7:63:8f:4a",
+            "platform": "x86_64-kvm_x86_64-r0",
+            "timezone": "UTC",
+            "type": "LeafRouter"
+        }
+    },
+```
+
+## SONiC node configuration after boot 
+
+After boot there are two steps required
+
+1 - Replace the file /etc/sonic/config_db.json at the SONiC host (apparently it is not possible to pass the configuration file directly via the clab.yml defintion hence the need for this step)
+
+1.1 - Copy the file to the host
+
+1.2 - Reload the host so that the "new" configuration in the JSON file becomes active 
+
+The above steps are summarised in the shell script [`deploy_sonic_cfg.sh`](https://github.com/missoso/sonic-l2ls-evpn-containerlab/blob/main/deploy_sonic_cfg.sh)
+
+2 - Load the desided [`FRR BGP configuration`](https://github.com/missoso/sonic-l2ls-evpn-containerlab/blob/main/configs/leaf1-frr-bgp.cfg) 
+
+After step 1 there will be some BGP paramentes already there (the onces that are part of the JSON), however, others need to be added directly at the FRR configuraiton level.
+
+This can be achieved by running the script [`deploy_bgp_vtysh.sh`](https://github.com/missoso/sonic-l2ls-evpn-containerlab/blob/main/deploy_bgp_vtysh.sh)
+
 
 
 
