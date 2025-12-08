@@ -58,6 +58,37 @@ Using the above in the clab.yml file the "kind" field to be used is "sonic-vm" (
       image: vrnetlab/sonic_sonic-vs:202411
 ```
 
+The advantage of using the vrnetlab tool is that the result truly mimics the SONiC architecture, where we can see differend containers for different processes
+
+```bash
+admin@sonic:~$ docker ps
+CONTAINER ID   IMAGE                             COMMAND                  CREATED              STATUS              PORTS     NAMES
+6c0b1e92be5c   docker-router-advertiser:latest   "/usr/bin/docker-ini…"   46 seconds ago       Up 41 seconds                 radv
+476887704c68   docker-gbsyncd-vs:latest          "/usr/local/bin/supe…"   47 seconds ago       Up 42 seconds                 gbsyncd
+b0671ba89f97   docker-eventd:latest              "/usr/local/bin/supe…"   48 seconds ago       Up 43 seconds                 eventd
+8249518149b4   docker-fpm-frr:latest             "/usr/bin/docker_ini…"   48 seconds ago       Up 45 seconds                 bgp
+61e5be1a45a9   docker-syncd-vs:latest            "/usr/local/bin/supe…"   49 seconds ago       Up 46 seconds                 syncd
+f2287fc3db9c   docker-teamd:latest               "/usr/local/bin/supe…"   49 seconds ago       Up 47 seconds                 teamd
+a459756a8bf2   docker-orchagent:latest           "/usr/bin/docker-ini…"   53 seconds ago       Up 50 seconds                 swss
+43f5388f05d5   docker-database:latest            "/usr/local/bin/dock…"   About a minute ago   Up About a minute             database
+```
+
+## Deploying the lab
+
+The lab is deployed with the [containerlab](https://containerlab.dev) project, where [`evpn_sonic_l2ls.clab.yml`](https://github.com/missoso/evpn_sonic_l2ls/blob/main/evpn_sonic_l2ls.clab.yml) file declaratively describes the lab topology.
+
+```bash
+# to create the lab execute in the cloned directory
+containerlab deploy --reconfigure
+```
+
+After the lab is created it is expected that the SONiC router willl take some time to load
+
+
+```bash
+# to remove the lab execute in the cloned directory
+containerlab destroy --cleanup
+```
 
 
 
