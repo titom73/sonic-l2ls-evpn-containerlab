@@ -6,17 +6,18 @@ The purpose of this repo is showing how to create a SONiC image to be used in a 
 
 # Donwload the SONiC image
 
-1. Go to the pipelines list: https://sonic-build.azurewebsites.net/ui/sonic/pipelines
+1 - Go to the pipelines list: https://sonic-build.azurewebsites.net/ui/sonic/pipelines and scroll all the way down where "vs" platform is listed
 
-2. Scroll all the way to the bottom where "vs" platform is listed
+2 - Choose a build (in this lab 202411 was used for no particular reason) and click on build history
+  
+3 - Pick one where "Result = succeeded" and click on Artifacts 
 
-3. Pick a branch name that you want to use (e.g. 202405) and click on the "Build History".
+4 - Click on sonic-builimage.vs
 
-4. On the build history page choose the latest build that has succeeded (check the Result column) and click on the "Artifacts" link
+5 - Donwload the target/sonic-vs.img.gz
 
-5. In the new window, you will see a list with a single artifact, click on it
+![pic1](https://github.com/missoso/sonic-l2ls-evpn-containerlab/blob/main/img_and_drawio/sonic-img-download.png)
 
-6. Scroll down until you see target/docker-sonic-vs.gz name and download it
 
 # Build the SONiC container lab image
 
