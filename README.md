@@ -77,16 +77,19 @@ a459756a8bf2   docker-orchagent:latest           "/usr/bin/docker-ini…"   53 s
 
 The lab is deployed with the [containerlab](https://containerlab.dev) project, where [`evpn_sonic_l2ls.clab.yml`](https://github.com/missoso/sonic-l2ls-evpn-containerlab/blob/main/evpn_sonic_l2ls.clab.yml) file declaratively describes the lab topology.
 
+Create/update the lab
 ```bash
-# to create the lab execute in the cloned directory
 containerlab deploy --reconfigure
 ```
 
-After the lab is created it is expected that the SONiC router willl take some time to load, monitor 
-
-
+After the lab is created it is expected that the SONiC router willl take some time to load, it should be monitored using the docker ps command
 ```bash
-# to remove the lab execute in the cloned directory
+$ docker ps | grep leaf1
+42048a32ab14   vrnetlab/sonic_sonic-vs:202411       "/launch.py --userna…"   10 minutes ago   Up 10 minutes (healthy)   22/tcp, 443/tcp, 5000/tcp, 8080/tcp                      leaf1
+```
+
+Destroy the lab
+```bash
 containerlab destroy --cleanup
 ```
 
