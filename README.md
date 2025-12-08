@@ -41,4 +41,28 @@ Using the above in the clab.yml file the "kind" field to be used is "sonic-vs" (
 
 2 - Use the vrnetlab tool (https://containerlab.dev/manual/vrnetlab/) to create a SONiC image that truly mimics the SONiC architecture in terms of different processes running in different containers
 
-Using the above in the clab.yml file the "kind" field to be used is "sonic-vs" (kind: sonic-vm)
+
+
+After installing vrnetlab:
+1 - place the sonic-vs.img.gz in the vrnetlab directory
+2 - Uncompress it, and rename it to `sonic-vs-[version].qcow2` and run `make`.
+
+```bash
+$ docker images | grep vrnetlab
+vrnetlab/sonic_sonic-vs                202411    0abf9ef806c8   About a minute ago   6.42GB
+```
+
+Using the above in the clab.yml file the "kind" field to be used is "sonic-vm" (kind: sonic-vm)
+
+```bash
+    leaf1:
+      kind: sonic-vm
+      image: vrnetlab/sonic_sonic-vs:202411
+```
+
+
+
+
+
+
+
