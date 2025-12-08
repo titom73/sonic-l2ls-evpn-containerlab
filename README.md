@@ -248,12 +248,94 @@ The configuration is a simple Layer 2 EVPN where access port Ethernet4 is an unt
     }
 ```
 
+The above is the JSON configuration, in the CLI the commands to achieve that configuration would be:
+
+```bash
+admin@sonic:~$ sudo config vlan add 100
+
+admin@sonic:~$ sudo config vlan member add 100 Ethernet4 --untagged
+
+admin@sonic:~$ sudo config vxlan add VXLAN100 10.0.1.1. # 10.0.1.1 is the Loopback0 address
+
+admin@sonic:~$ sudo config vxlan map add VXLAN100 100 100 # MAP VXLAN100 to VLAN 100 and to VNI 100 
+
+admin@sonic:~$ show vxlan interface
+VTEP Information:
+
+	VTEP Name : VXLAN100, SIP  : 10.0.1.1
+	Source interface  : Loopback0
+
+
+admin@sonic:~$ show vlan brief
++-----------+--------------+-----------+----------------+-------------+
+|   VLAN ID | IP Address   | Ports     | Port Tagging   | Proxy ARP   
++===========+==============+===========+================+=
+|       100 |              | Ethernet4 | untagged       | disabled    |                       |
++-----------+--------------+-----------+----------------+-------------+
+```
+
 
 ## SONiC node BGP configuration
 
 The FRR configuration is straighforward, 2 BGP peerings, one eBGP acting as an underlay and one iBGP as the overlay where the spine acts as an iBGP route reflector, the [`FRR BGP configuration`](https://github.com/missoso/sonic-l2ls-evpn-containerlab/blob/main/configs/leaf1-frr-bgp.cfg) file is self explanatory
 
+## Routing table
 
+```bash
+Linux sonic 6.1.0-29-2-amd64 #1 SMP PREEMPT_DYNAMIC Debian 6.1.123-1 (2025-01-02) x86_64
+You are on
+  ____   ___  _   _ _  ____
+ / ___| / _ \| \ | (_)/ ___|
+ \___ \| | | |  \| | | |
+  ___) | |_| | |\  | | |___
+ |____/ \___/|_| \_|_|\____|
+
+-- Software for Open Networking in the Cloud --
+
+Unauthorized access and/or use are prohibited.
+All access and/or use are subject to monitoring.
+
+Help:    https://sonic-net.github.io/SONiC/
+
+Last login: Mon Dec  8 14:34:00 2025 from 172.80.80.1
+admin@sonic:~$ vtysh
+
+Hello, this is FRRouting (version 10.0.1).
+Copyright 1996-2005 Kunihiro Ishiguro, et al.
+
+2025/12/08 21:30:46 [YDG3W-JND95] FD Limit set: 1048576 is stupidly large.  Is this what you intended?  Consider using --limit-fds also limiting size to 100000
+sonic# show bgp l2vpn evpn
+BGP table version is 6, local router ID is 10.0.1.1
+Status codes: s suppressed, d damped, h history, * valid, > best, i - internal
+Origin codes: i - IGP, e - EGP, ? - incomplete
+EVPN type-1 prefix: [1]:[EthTag]:[ESI]:[IPlen]:[VTEP-IP]:[Frag-id]
+EVPN type-2 prefix: [2]:[EthTag]:[MAClen]:[MAC]:[IPlen]:[IP]
+EVPN type-3 prefix: [3]:[EthTag]:[IPlen]:[OrigIP]
+EVPN type-4 prefix: [4]:[ESI]:[IPlen]:[OrigIP]
+EVPN type-5 prefix: [5]:[EthTag]:[IPlen]:[IP]
+
+   Network          Next Hop            Metric LocPrf Weight Path
+Route Distinguisher: 10.0.1.1:100
+ *> [2]:[0]:[48]:[22:d1:c7:63:8f:4a]:[128]:[fe80::20d1:c7ff:fe63:8f4a]
+                    10.0.1.1                           32768 i
+                    ET:8 RT:65000:100
+ *> [2]:[0]:[48]:[aa:c1:ab:d7:8a:06]
+                    10.0.1.1                           32768 i
+                    ET:8 RT:65000:100
+ *> [2]:[0]:[48]:[aa:c1:ab:d7:8a:06]:[128]:[fe80::a8c1:abff:fed7:8a06]
+                    10.0.1.1                           32768 i
+                    ET:8 RT:65000:100
+ *> [3]:[0]:[32]:[10.0.1.1]
+                    10.0.1.1                           32768 i
+                    ET:8 RT:65000:100
+Route Distinguisher: 10.0.1.2:100
+ *> [2]:[0]:[48]:[aa:c1:ab:5a:c3:78]
+                    10.0.1.2                      100      0 100 201 i
+                    RT:65000:100 ET:8
+ *> [3]:[0]:[32]:[10.0.1.2]
+                    10.0.1.2                      100      0 100 201 i
+                    RT:65000:100 ET:8
+```
 
 
 
