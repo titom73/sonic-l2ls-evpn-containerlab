@@ -4,9 +4,9 @@ The purpose of this repository is showing how to create a SONiC image to be used
 
 ![pic1](https://github.com/missoso/sonic-l2ls-evpn-containerlab/blob/main/img_and_drawio/sonic-l2ls-evpn-containerlab.png)
 
-Client1 (172.17.1.1/24) and client2 (172.17.1.2/24) are on the same subnet and can reach each other, once the lab is deployed populating the ARP tables at the hosts can be achieved by just running the script [pings.sh](https://containerlab.dev)
+Client1 (172.17.1.1/24) and client2 (172.17.1.2/24) are on the same subnet and can reach each other, once the lab is deployed populating the ARP tables at the hosts can be achieved by just running the script [pings.sh](https://github.com/missoso/sonic-l2ls-evpn-containerlab/blob/main/pings.sh)
 
-# Download the SONiC image
+# Download the SONiC image from an Azure pipeline
 
 1 - Go to the pipelines list: https://sonic-build.azurewebsites.net/ui/sonic/pipelines and scroll all the way down where "vs" platform is listed
 
@@ -20,17 +20,23 @@ Client1 (172.17.1.1/24) and client2 (172.17.1.2/24) are on the same subnet and c
 
 ![pic1](https://github.com/missoso/sonic-l2ls-evpn-containerlab/blob/main/img_and_drawio/sonic-img-download.png)
 
+The above insttructions are based on the following URL: https://containerlab.dev/manual/kinds/sonic-vs/#getting-sonic-images
 
 # Build the SONiC container lab image
 
 ```bash
 % ls | grep sonic
-docker-sonic-vs.gz
+sonic-vs.img.gz
+
+$ gunzip sonic-vs.img.gz
+
+$ ls
+sonic-vs.img
 ```
 
 Here there are 2 options:
 
-1 - (not used in this repository) Simply load the docker-sonic-vs into docker, the drawback is that the end result is not going to be very similar to a SONiC router where processes like shmp, swss, bgp etc are running in separate containers
+1 - (not used in this repository) Uncompress and simply load the image into docker, the drawback is that the end result is not going to be very similar to a SONiC router since processes like shmp, swss, bgp etc will not be running in separate containers
 
 ```bash
 $ docker load < docker-sonic-vs
@@ -43,12 +49,17 @@ Using the above in the clab.yml file the "kind" field to be used is "sonic-vs" (
 
 2 - Use the vrnetlab tool (https://containerlab.dev/manual/vrnetlab/) to create a SONiC image that truly mimics the SONiC architecture in terms of different processes running in different containers
 
-After installing vrnetlab place the uncompress file in the vrnetlab directory, rename it to `sonic-vs-[version].qcow2` and run `make`.
+The installation process of vrnetlab places the prompt ~/vrnetlab/, enter the sonic sub directory and the README.md file contains all the instructions, as also detailed in the CLI output below
+
 
 ```bash
-$ mv sonic-vs.img sonic-vs-202411.qcow2
-$ make
-$ docker images | grep vrnetlab
+# copy the image into ~/vrnetlab/sonic
+
+:~/vrnetlab/sonic$  mv sonic-vs.img sonic-vs-202411.qcow2
+
+:~/vrnetlab/sonic$  make
+
+:~/vrnetlab/sonic$  docker images | grep vrnetlab
 vrnetlab/sonic_sonic-vs                202411    0abf9ef806c8   About a minute ago   6.42GB
 ```
 
@@ -84,7 +95,7 @@ To create or update the lab
 containerlab deploy --reconfigure
 ```
 
-After the lab is created it is expected that the SONiC router will take some time to load, use docker ps command to see when the status becomes healthy
+After the lab is created it is expected that the SONiC router will take some time to load, use the docker ps command to see when the status becomes healthy
 
 ```bash
 $ docker ps | grep leaf1
@@ -98,7 +109,7 @@ containerlab destroy --cleanup
 
 ## SONiC configuration files
 
-There are two key components
+There are two key files:
 
 1 - JSON file (located at /etc/sonic/config_db.json)
 ```bash
@@ -114,11 +125,11 @@ sudo config reload -y
 
 The SONiC configuration cab be done by manipulating the JSON (and then reloading) or simply using the SONiC CLI adn then doing a config save.
 
-**Important note 1**: The https://github.com/sonic-net/SONiC/wiki/Configuration provides some very good insights regarding the JSON file structure, however, it is not a complete schema definition to that JSON file (the information is scattered across several different websites)
+**Important note 1**: The https://github.com/sonic-net/SONiC/wiki/Configuration provides some very good insights regarding the JSON file structure, however, it is not a complete schema definition (the information is scattered across several different websites)
 
 **Important note 2**: Many of the BGP configuration options can be configured in the JSON file directly, however, some configuration options (e.g. import/export policies) require FRR configuration which requires editing the configuration file for FRR (next point)
 
-2 - FRR configuration regarding protocols such as BGP, can be acceses using vtysh in the SONiC host
+2 - FRR configuration regarding protocols such as BGP, can be accessed using vtysh in the SONiC host
 ```bash
 admin@sonic:~$ vtysh
 
@@ -127,7 +138,7 @@ Copyright 1996-2005 Kunihiro Ishiguro, et al.
 sonic#     
 ```
 
-In this repository there is some BGP configuration in the JSON and some on the FRR config, some parts of the JSON file:
+In this repository there is some BGP configuration in the JSON file and some on the FRR config, some parts of the JSON file:
 
 ```bash
     "BGP_DEVICE_GLOBAL": {
@@ -170,7 +181,9 @@ After boot there are two steps required
 
 1.1 - Copy the file to the host
 
-1.2 - Reload the host so that the "new" configuration in the JSON file becomes active 
+1.2 - Replace /etc/sonic/config_db.json
+
+1.3 - Reload the host so that the "new" configuration in the JSON file becomes active 
 
 The above steps are summarised in the shell script [`deploy_sonic_cfg.sh`](https://github.com/missoso/sonic-l2ls-evpn-containerlab/blob/main/deploy_sonic_cfg.sh)
 
