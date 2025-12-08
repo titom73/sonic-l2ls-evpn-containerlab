@@ -180,7 +180,7 @@ This can be achieved by running the script [`deploy_bgp_vtysh.sh`](https://githu
 
 ## SONiC specifics regarding container lab topology file and interface naming
 
-In the file that describes the topology [`evpn_sonic_l2ls.clab.yml`](https://github.com/missoso/sonic-l2ls-evpn-containerlab/blob/main/evpn_sonic_l2ls.clab.yml) the interfaces for a device of type sonic-vm or sonic-vs are named eth1 to ethN where in the SONiC router there are named Ethernet0, Ethernet4, Ethernet8 and so on. The matching rules used is that eth1 in the clab.yml file relates to the 1st Ethernet interface in the SONiC router, eth2 to the 2nd and so on ... so in the topology filew e see eth1 and eth2 regarding leaf1 (the SONiC router):
+In the file that describes the topology [`evpn_sonic_l2ls.clab.yml`](https://github.com/missoso/sonic-l2ls-evpn-containerlab/blob/main/evpn_sonic_l2ls.clab.yml) the interfaces for a device of type sonic-vm or sonic-vs are named eth1 to ethN where in the SONiC router there are named Ethernet0, Ethernet4, Ethernet8 and so on. The matching rules used is that eth1 in the clab.yml file relates to the 1st Ethernet interface in the SONiC router, eth2 to the 2nd and so on ... so in the topology file we see eth1 and eth2 regarding leaf1 (the SONiC router):
 
 ```bash
   links:
