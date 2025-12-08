@@ -26,4 +26,19 @@ The purpose of this repo is showing how to create a SONiC image to be used in a 
 docker-sonic-vs.gz
 ```
 
-Here there are 2 options
+Here there are 2 options:
+
+1 - (not used in ths repository) Simply load the docker-sonic-vs into docker, the drawback is that the end result is not going to be similar to a SONiC router where processes like shmp, swss, bgp etc are running in separate containers 
+
+```bash
+$ docker load < docker-sonic-vs
+$ docker image ls
+REPOSITORY                             TAG       IMAGE ID       CREATED         SIZE
+docker-sonic-vs                        latest    2d9c647a53df   4 hours ago     797MB 
+```
+
+Using the above in the clab.yml file the "kind" field to be used is "sonic-vs" (kind: sonic-vs)
+
+2 - Use the vrnetlab tool (https://containerlab.dev/manual/vrnetlab/) to create a SONiC image that truly mimics the SONiC architecture in terms of different processes running in different containers
+
+Using the above in the clab.yml file the "kind" field to be used is "sonic-vs" (kind: sonic-vm)
