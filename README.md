@@ -277,7 +277,7 @@ admin@sonic:~$ show vlan brief
 
 ## SONiC node BGP configuration
 
-The FRR configuration is straighforward, 2 BGP peerings, one eBGP acting as an underlay and one iBGP as the overlay where the spine acts as an iBGP route reflector, the [`FRR BGP configuration`](https://github.com/missoso/sonic-l2ls-evpn-containerlab/blob/main/configs/leaf1-frr-bgp.cfg) file is self explanatory
+The FRR configuration is straightforward, 2 BGP peering sessions towards the spine, one eBGP acting as an underlay and one iBGP as the overlay (spine acts as an route reflector), the [`FRR BGP configuration`](https://github.com/missoso/sonic-l2ls-evpn-containerlab/blob/main/configs/leaf1-frr-bgp.cfg) file is self explanatory
 
 ## Routing table
 
@@ -303,7 +303,6 @@ admin@sonic:~$ vtysh
 Hello, this is FRRouting (version 10.0.1).
 Copyright 1996-2005 Kunihiro Ishiguro, et al.
 
-2025/12/08 21:30:46 [YDG3W-JND95] FD Limit set: 1048576 is stupidly large.  Is this what you intended?  Consider using --limit-fds also limiting size to 100000
 sonic# show bgp l2vpn evpn
 BGP table version is 6, local router ID is 10.0.1.1
 Status codes: s suppressed, d damped, h history, * valid, > best, i - internal
@@ -337,6 +336,6 @@ Route Distinguisher: 10.0.1.2:100
                     RT:65000:100 ET:8
 ```
 
-
+As per the above we ahve routers being exchanged between PE1 (SONiC - 10.0.1.1.) and PE2 (SR Linux - 10.0.1.2)
 
 
