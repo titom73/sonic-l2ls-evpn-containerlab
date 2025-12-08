@@ -75,7 +75,7 @@ a459756a8bf2   docker-orchagent:latest           "/usr/bin/docker-ini…"   53 s
 
 ## Deploying the lab
 
-The lab is deployed with the [containerlab](https://containerlab.dev) project, where [`evpn_sonic_l2ls.clab.yml`](https://github.com/missoso/evpn_sonic_l2ls/blob/main/evpn_sonic_l2ls.clab.yml) file declaratively describes the lab topology.
+The lab is deployed with the [containerlab](https://containerlab.dev) project, where [`evpn_sonic_l2ls.clab.yml`](https://github.com/missoso/sonic-l2ls-evpn-containerlab/blob/main/evpn_sonic_l2ls.clab.yml) file declaratively describes the lab topology.
 
 ```bash
 # to create the lab execute in the cloned directory
