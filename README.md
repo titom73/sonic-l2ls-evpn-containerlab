@@ -1,10 +1,10 @@
-# sonic-l2ls-evpn-containerlab
+<img width="468" height="25" alt="image" src="https://github.com/user-attachments/assets/c2044462-e951-42bd-a4f0-5f256752f035" /><img width="468" height="25" alt="image" src="https://github.com/user-attachments/assets/0451d326-d207-4117-b0a2-e885d58ce517" /># sonic-l2ls-evpn-containerlab
 
 The purpose of this repository is showing how to create a SONiC image to be used in a container lab setup and the configuration required at both the SONiC JSON and FRR levels to deploy a simple EVPN layer 2 service, where one leaf runs SONiC and the spine and the other leaf run SR Linux, as per the diagram:
 
 ![pic1](https://github.com/missoso/sonic-l2ls-evpn-containerlab/blob/main/img_and_drawio/sonic-l2ls-evpn-containerlab.png)
 
-# Donwload the SONiC image
+# Download the SONiC image
 
 1 - Go to the pipelines list: https://sonic-build.azurewebsites.net/ui/sonic/pipelines and scroll all the way down where "vs" platform is listed
 
@@ -14,7 +14,7 @@ The purpose of this repository is showing how to create a SONiC image to be used
 
 4 - Click on sonic-builimage.vs
 
-5 - Donwload the target/sonic-vs.img.gz
+5 - Download the target/sonic-vs.img.gz
 
 ![pic1](https://github.com/missoso/sonic-l2ls-evpn-containerlab/blob/main/img_and_drawio/sonic-img-download.png)
 
@@ -28,7 +28,7 @@ docker-sonic-vs.gz
 
 Here there are 2 options:
 
-1 - (not used in ths repository) Simply load the docker-sonic-vs into docker, the drawback is that the end result is not going to be similar to a SONiC router where processes like shmp, swss, bgp etc are running in separate containers 
+1 - (not used in this repository) Simply load the docker-sonic-vs into docker, the drawback is that the end result is not going to be very similar to a SONiC router where processes like shmp, swss, bgp etc are running in separate containers
 
 ```bash
 $ docker load < docker-sonic-vs
@@ -58,7 +58,7 @@ Using the above in the clab.yml file the "kind" field to be used is "sonic-vm" (
       image: vrnetlab/sonic_sonic-vs:202411
 ```
 
-The advantage of using the vrnetlab tool is that the result truly mimics the SONiC architecture, where we can see differend containers for different processes
+The advantage of using the vrnetlab tool is that the result truly mimics the SONiC architecture, where we can see different containers for different processes
 
 ```bash
 admin@sonic:~$ docker ps
@@ -77,18 +77,19 @@ a459756a8bf2   docker-orchagent:latest           "/usr/bin/docker-ini…"   53 s
 
 The lab is deployed with the [containerlab](https://containerlab.dev) project, where [`evpn_sonic_l2ls.clab.yml`](https://github.com/missoso/sonic-l2ls-evpn-containerlab/blob/main/evpn_sonic_l2ls.clab.yml) file declaratively describes the lab topology.
 
-Create/update the lab
+To create or update the lab
 ```bash
 containerlab deploy --reconfigure
 ```
 
-After the lab is created it is expected that the SONiC router willl take some time to load, it should be monitored using the docker ps command
+After the lab is created it is expected that the SONiC router will take some time to load, use docker ps command to see when the status becomes healthy
+
 ```bash
 $ docker ps | grep leaf1
 42048a32ab14   vrnetlab/sonic_sonic-vs:202411       "/launch.py --userna…"   10 minutes ago   Up 10 minutes (healthy)   22/tcp, 443/tcp, 5000/tcp, 8080/tcp                      leaf1
 ```
 
-Destroy the lab
+To destroy the lab
 ```bash
 containerlab destroy --cleanup
 ```
@@ -109,7 +110,9 @@ sudo config load /etc/sonic/config_db.json -y
 sudo config reload -y 
 ```
 
-**Important note 1**: The https://github.com/sonic-net/SONiC/wiki/Configuration provides some very good insights regarding the JSON file structure, however, it is not a compelte schema definition to that JSON file (the information is scattered across several different websites)
+The SONiC configuration cab be done by manipulating the JSON (and then reloading) or simply using the SONiC CLI adn then doing a config save.
+
+**Important note 1**: The https://github.com/sonic-net/SONiC/wiki/Configuration provides some very good insights regarding the JSON file structure, however, it is not a complete schema definition to that JSON file (the information is scattered across several different websites)
 
 **Important note 2**: Many of the BGP configuration options can be configured in the JSON file directly, however, some configuration options (e.g. import/export policies) require FRR configuration which requires editing the configuration file for FRR (next point)
 
@@ -161,7 +164,7 @@ In the folder [`configs`](https://github.com/missoso/sonic-l2ls-evpn-containerla
 
 After boot there are two steps required
 
-1 - Replace the file /etc/sonic/config_db.json at the SONiC host (apparently it is not possible to pass the configuration file directly via the clab.yml defintion hence the need for this step)
+1 - Replace the file /etc/sonic/config_db.json at the SONiC host (apparently it is not possible to pass the configuration file directly via the clab.yml definition hence the need for this step)
 
 1.1 - Copy the file to the host
 
@@ -171,13 +174,13 @@ The above steps are summarised in the shell script [`deploy_sonic_cfg.sh`](https
 
 2 - Load the desided [`FRR BGP configuration`](https://github.com/missoso/sonic-l2ls-evpn-containerlab/blob/main/configs/leaf1-frr-bgp.cfg) 
 
-After step 1 there will be some BGP paramentes already there (the onces that are part of the JSON), however, others need to be added directly at the FRR configuraiton level.
+After step 1 there will be some BGP parameters already there (the ones that are part of the JSON), however, others need to be added directly at the FRR configuration level.
 
 This can be achieved by running the script [`deploy_bgp_vtysh.sh`](https://github.com/missoso/sonic-l2ls-evpn-containerlab/blob/main/deploy_bgp_vtysh.sh)
 
 ## SONiC specifics regarding container lab topology file and interface naming
 
-In the file that describes the topology [`evpn_sonic_l2ls.clab.yml`](https://github.com/missoso/sonic-l2ls-evpn-containerlab/blob/main/evpn_sonic_l2ls.clab.yml) the interfaces for a device of type sonic-vm or sonic-vs are named eth1 to ethN where in the SONiC router there are named Ethernet0, Ethernet4, Ethernet8 and so on. The matching rules used is that eth1 in the clab.yml file relates to the 1st Ethernet interface in the SONiC router, eth2 to the 2nd adn so on ... so in the topology filew e see eth1 and eth2 regarding leaf1 (the SONiC router):
+In the file that describes the topology [`evpn_sonic_l2ls.clab.yml`](https://github.com/missoso/sonic-l2ls-evpn-containerlab/blob/main/evpn_sonic_l2ls.clab.yml) the interfaces for a device of type sonic-vm or sonic-vs are named eth1 to ethN where in the SONiC router there are named Ethernet0, Ethernet4, Ethernet8 and so on. The matching rules used is that eth1 in the clab.yml file relates to the 1st Ethernet interface in the SONiC router, eth2 to the 2nd and so on ... so in the topology filew e see eth1 and eth2 regarding leaf1 (the SONiC router):
 
 ```bash
   links:
@@ -203,7 +206,7 @@ admin@sonic:~$ show interfaces status
 
 ## SONiC node VXLAN configuration
 
-The configuration is a simple Layer 2 EVPN where access port Ethernet4 is an untagged port belonguing to VLAN 100, which is part of VXLAN 100 (that uses VNI 100) and the VTEP endpoint is the loopback interface (10.0.1.1)
+The configuration is a simple Layer 2 EVPN where access port Ethernet4 is an untagged port belonging to VLAN 100, which is part of VXLAN 100 (that uses VNI 100) and the VTEP endpoint is the loopback interface (10.0.1.1)
 
 
 ```bash
@@ -229,7 +232,11 @@ The configuration is a simple Layer 2 EVPN where access port Ethernet4 is an unt
         }
     }
 ```
+
+
 ## SONiC node BGP configuration
+
+The FRR configuration is straighforward, 2 BGP peerings, one eBGP acting as an underlay and one iBGP as the overlay where the spine acts as an iBGP route reflector, the [`FRR BGP configuration`](https://github.com/missoso/sonic-l2ls-evpn-containerlab/blob/main/configs/leaf1-frr-bgp.cfg) file is self explanatory
 
 
 
