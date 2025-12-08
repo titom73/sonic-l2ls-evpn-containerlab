@@ -1,8 +1,10 @@
 # sonic-l2ls-evpn-containerlab
 
-The purpose of this repository is showing how to create a SONiC image to be used in a container lab setup and the configuration required at both the SONiC JSON and FRR levels to deploy a simple EVPN layer 2 service, where one leaf runs SONiC and the spine and the other leaf run SR Linux, as per the diagram:
+The purpose of this repository is showing how to create a SONiC image to be used in a container lab setup and the configuration required at both the SONiC JSON and FRR/BGP levels to deploy a simple EVPN layer 2 service, where one leaf runs SONiC and the spine and the other leaf run SR Linux, as per the diagram:
 
 ![pic1](https://github.com/missoso/sonic-l2ls-evpn-containerlab/blob/main/img_and_drawio/sonic-l2ls-evpn-containerlab.png)
+
+Client1 (172.17.1.1/24) and client2 (172.17.1.2/24) are on the same subnet and can reach each other, once the lab is deployed populating the ARP tables at the hosts can be achieved by just running the script [pings.sh](https://containerlab.dev)
 
 # Download the SONiC image
 
